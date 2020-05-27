@@ -32,18 +32,38 @@ Resources:
       Tags:
         - Key: Name
           Value: MyDevelopmentMachine
+          
+  InactivityAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: True
+      AlarmActions:
+        - !Sub 'arn:aws:automate:${AWS::Region}:ec2:stop'
+      AlarmDescription: !Sub 'Stops ${DevelopmentInstance} after 1 hour of inactivity.'
+      ComparisonOperator: LessThanOrEqualToThreshold
+      Dimensions:
+        -
+          Name: InstanceId
+          Value: !Ref DevelopmentInstance
+      EvaluationPeriods: 1
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: 3600
+      Statistic: Maximum
+      Threshold: .1
+      TreatMissingData: Missing
 
   SG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Permits SSH traffic from all IP addresses.
       SecurityGroupIngress:
-        - 
+        -
           CidrIp: 0.0.0.0/0
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22
-        - 
+        -
           CidrIpv6: ::/0
           FromPort: 22
           IpProtocol: tcp
