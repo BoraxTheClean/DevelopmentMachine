@@ -29,16 +29,21 @@ Resources:
       KeyName: !Ref Key
       SecurityGroupIds:
         - !Ref SG
-    Tags:
-      - Key: Name
-        Value: MyDevelopmentMachine
+      Tags:
+        - Key: Name
+          Value: MyDevelopmentMachine
 
   SG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Permits SSH traffic from all IP addresses.
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
+        - 
+          CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - 
           CidrIpv6: ::/0
           FromPort: 22
           IpProtocol: tcp
