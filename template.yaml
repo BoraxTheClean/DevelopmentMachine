@@ -1,0 +1,73 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  Deploys and EC2 instance and an alarm to shut the instance down during inactivity.
+
+Parameters:
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Description: This is the latest Amazon Linux AMI.
+
+  Key:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: The EC2 KeyPair you will use to access your development instance.
+
+  InstanceType:
+    Type: String
+    Default: t3.nano
+    Description: Note that if you are free tier eligible, t3.micro is free.
+
+Resources:
+  DevelopmentInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref Key
+      SecurityGroupIds:
+        - !Ref SG
+    Tags:
+      - Key: Name
+        Value: MyDevelopmentMachine
+
+  SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permits SSH traffic from all IP addresses.
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          CidrIpv6: ::/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      Tags:
+        - Key: Name
+          Value: MyDevelopmentMachineSG
+
+
+  InstanceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref InstanceRole
