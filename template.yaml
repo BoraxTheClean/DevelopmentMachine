@@ -51,7 +51,7 @@ Resources:
       Period: 3600
       Statistic: Maximum
       Threshold: .1
-      TreatMissingData: Missing
+      TreatMissingData: missing
 
   SG:
     Type: AWS::EC2::SecurityGroup
