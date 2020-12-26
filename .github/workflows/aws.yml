@@ -1,21 +1,43 @@
-name: Make template public
+name: Cloudformation CI
 
 on:
   push:
     branches:
     - master
+    - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - uses: jakejarvis/s3-sync-action@master
-      with:
-        args: --acl public-read --follow-symlinks --exclude '*' --include 'template.yaml'
-      env:
-        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: 'us-east-1'
-        DEST_DIR: 'development-machine'
+      - uses: actions/checkout@master
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Package and Deploy to AWS CloudFormation
+        run: |
+          aws cloudformation package --template-file template.yaml \
+            --s3-bucket ${{ secrets.AWS_S3_BUCKET }} \
+            --region us-east-1 \
+            --output-template-file processed.template.yaml
+          aws cloudformation deploy --template-file processed.template.yaml \
+            --stack-name development-machine \
+            --no-fail-on-empty-changeset \
+            --region us-east-1 \
+            --parameter-overrides Key=${{ secrets.SSH_KEY }} \
+            --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_IAM
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read --follow-symlinks --exclude '*' --include 'template.yaml'
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+          DEST_DIR: 'development-machine'
